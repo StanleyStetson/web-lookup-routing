@@ -1,14 +1,16 @@
-# Example: Product / Price Card Extraction
+# Example: Product / price card
 
-**Query class:** Product / offer  
-**Layer 1 surface:** `web_search` + `x_search` (social slot — product topic)  
-**Layer 2 path:** Step 1b `extract_structured.py` → JS slot if price is JS-only
+**Query class:** Product / company / tech / trend  
+**Layer 1 surface:** `web_search` + `x_search` (if `x_search` exists)  
+**Layer 2 path:** step 1b `extract_structured.py` first
+
+Prices in this file are **illustrative**. Never copy them into a user answer.
 
 ---
 
 ## User prompt
 
-> How much does the Notion AI Pro plan cost right now?
+> How much does the Notion AI add-on cost right now?
 
 ---
 
@@ -16,36 +18,30 @@
 
 ### Step 1 — Classify and search (layer 1)
 
-Query class: **product / offer** → `web_search` AND `x_search` in the same turn (social rule: product topic + `x_search` exists).
+Object is a product → `web_search` and `x_search` in the same turn. If `x_search` is missing, say so; do not pretend web results cover social.
 
 ```
-web_search(query="Notion AI Pro plan price 2024", num_results=5)
-x_search(query="Notion AI Pro pricing", max_results=10)
+web_search(query="Notion AI add-on official pricing", limit=5)
+x_search(query="Notion AI pricing")
 ```
 
-`web_search` results:
-- `https://www.notion.so/pricing`
-- `https://www.notion.so/blog/notion-ai`
-- `https://techcrunch.com/2024/…/notion-ai-pricing/`
+`web_search` uses `limit` (not `num_results`). `x_search` takes `query` (no `max_results`).
 
-`x_search` results: 3 posts from @NotionHQ, 2 user reports.
+Dedup: strip `utm_*`. Keep the official pricing URL. Keep X posts on their own ids.
 
-Dedup: strip `utm_*`. Keep `notion.so/pricing`, `techcrunch.com/…`. Social posts kept separately.
+### Step 2 — Read the card (layer 2, step 1b first)
 
-### Step 2 — Read the product card (layer 2, step 1b first)
-
-Price target → start with `scripts/extract_structured.py`, not markdown `web_extract`.
+Price target → script first. Markdown `web_extract` strips `<script>` (JSON-LD).
 
 ```
 terminal(command="python3 scripts/extract_structured.py 'https://www.notion.so/pricing'", timeout=40)
 ```
 
-Output:
+Illustrative script shape (values are fake):
 
 ```json
 {
   "url": "https://www.notion.so/pricing",
-  "html_chars": 183420,
   "title": "Notion – Pricing",
   "json_ld": [
     {
@@ -53,37 +49,34 @@ Output:
       "name": "Notion AI",
       "offers": {
         "@type": "Offer",
-        "price": "10.00",
+        "price": "<from JSON-LD>",
         "priceCurrency": "USD",
         "availability": "https://schema.org/InStock"
       }
     }
   ],
-  "open_graph": {
-    "og:title": "Notion – Simple, powerful, beautiful"
-  }
+  "open_graph": {}
 }
 ```
 
-Structured data returned `price: 10.00 USD` with `InStock`. **Sufficient — stop. Do not call `web_extract`.**
+If `name` / `price` / `availability` are present → **stop**. Do not switch vendors.
 
-> **Pitfall avoided:** The `web_search` snippet showed "$8/month" — the cheapest tier from a multi-SKU index, not the AI Pro add-on. The JSON-LD on the actual page gave the correct add-on price.
+If JSON-LD is empty and the price is JS-only → JS/bulk slot if that tool exists in **this** session; else `browser_navigate` + `browser_snapshot`. Do not invent an `apify_actor` tool.
+
+**Pitfall:** a search snippet that shows a lower "$N/month" is often the cheapest SKU on a multi-tier page, not the add-on the user named. Quote offer fields from layer 2, or say the field is not in the HTML.
 
 ### Step 3 — Cite and answer
 
-Price sourced from the JSON-LD object read at `notion.so/pricing` (layer 2, step 1b). Search snippet not quoted.
+Name the pricing URL you opened. Do not quote the snippet price.
 
 ---
 
-## Final reply
+## Final reply (shape)
 
-Notion AI is available as an add-on to any Notion plan for **$10/user/month** (billed monthly), per the structured data on [notion.so/pricing](https://www.notion.so/pricing) as of the time of lookup.
+Notion AI add-on: **\<price and currency from JSON-LD or from a later cascade step\>** per [notion.so/pricing](https://www.notion.so/pricing), read in layer 2. If social posts only confirm the model and give no number, say that; the page is authoritative.
 
-Social posts from @NotionHQ on X confirm the add-on pricing model but do not give a numeric figure — the page source is authoritative.
-
-> **Verification checklist (internal)**  
-> - [x] Class: product → `web_search` + `x_search` both ran.  
-> - [x] URLs deduped (UTM stripped).  
-> - [x] Price: started at step 1b (script), not markdown extract.  
-> - [x] Snippet price not quoted as the asked tier.  
-> - [x] Claim names a layer-2 URL (the pricing page).
+> **Verification**
+> - [x] Product class → `web_search` + `x_search` (or `x_search` named unavailable).
+> - [x] Real Hermes params: `limit` on `web_search`; `query` only on `x_search` here.
+> - [x] Price started at step 1b. Snippet price not used.
+> - [x] No invented tool names.

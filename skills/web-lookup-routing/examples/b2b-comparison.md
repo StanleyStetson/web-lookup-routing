@@ -1,8 +1,10 @@
-# Example: B2B Competitor Comparison
+# Example: B2B competitor comparison
 
 **Query class:** Deep / B2B / competitors  
-**Layer 1 surface:** Semantic slot (Exa-style) if present, else `web_search`  
-**Layer 2 path:** Each official site through full cascade; prices via step 1b
+**Layer 1 surface:** semantic search MCP **if present**, else `web_search`  
+**Layer 2 path:** each official site through the cascade; prices via step 1b
+
+Table cells below are **illustrative**. Do not treat them as current vendor prices.
 
 ---
 
@@ -16,73 +18,53 @@
 
 ### Step 1 — Classify and search (layer 1)
 
-Query class: **deep / B2B / competitors** → semantic slot first (present in session); `web_search` as fallback if empty.
+Deep / B2B → if a semantic search MCP exists in this session, use that tool (name varies by MCP prefix — do not hard-code `exa_search`). If the slot is empty:
 
 ```
-exa_search(query="Linear vs Jira vs Height project management engineering teams comparison", num_results=8)
+web_search(query="Linear Jira Height project management official sites", limit=8)
 ```
 
-Results: mix of review aggregators and official pages.
-
-Dedup before reading:
-- Drop `g2.com`, `capterra.com`, `getapp.com` (aggregators / "best of" listicles per `references/competitor-analysis.md`).
-- Keep: `linear.app`, `atlassian.com/software/jira`, `height.app`.
-
-Three unique official domains. Proceed.
+Drop aggregator / "best of" listicles (`g2.com`, `capterra.com`, …) per `references/competitor-analysis.md`. Keep official product hosts. Dedup before any read.
 
 ### Step 2 — Read each official site (layer 2)
 
-Read each competitor through the full cascade. Prices start at step 1b.
+For each pricing URL:
 
-**Linear:**
 ```
 web_extract(urls=["https://linear.app/pricing"])
 terminal(command="python3 scripts/extract_structured.py 'https://linear.app/pricing'", timeout=40)
 ```
-→ Markdown extract: positioning and features. Script: `{"price": "8.00", "priceCurrency": "USD"}` per seat/month.
 
-**Jira:**
-```
-web_extract(urls=["https://www.atlassian.com/software/jira/pricing"])
-terminal(command="python3 scripts/extract_structured.py 'https://www.atlassian.com/software/jira/pricing'", timeout=40)
-```
-→ Script returns empty `json_ld` (price rendered in JS). Advance to JS slot:
-```
-apify_actor(actor="apify/web-scraper", url="https://www.atlassian.com/software/jira/pricing")
-```
-→ Price: $8.15/user/month (Standard, up to 35 000 users).
+- JSON-LD / OG has offer fields → stop for that competitor's price.
+- Script empty, price is JS-only → JS/bulk slot **if that tool exists** (Apify-style browser or `search_actors` + `call_actor`). Otherwise:
 
-**Height:**
 ```
-web_extract(urls=["https://height.app/pricing"])
-terminal(command="python3 scripts/extract_structured.py 'https://height.app/pricing'", timeout=40)
+browser_navigate(url="https://www.atlassian.com/software/jira/pricing")
+browser_snapshot()
 ```
-→ Markdown extract: sufficient. Script: no JSON-LD price found. Price visible in extract text: $8.50/member/month (Business).
 
-### Step 3 — Fill the competitor table (references/competitor-analysis.md template)
+Do not call a made-up `apify_actor` / `exa_search` name.
+
+### Step 3 — Table (`references/competitor-analysis.md`)
+
+Fill only from layer-2 reads. Leave a cell blank if that site did not yield the field.
 
 | Field | Linear | Jira | Height |
-|---|---|---|---|
-| **Positioning** | Speed-first issue tracker for eng teams | Enterprise-grade, fully customisable PM | Async-first, AI-native PM |
-| **Price** | $8/seat/mo (Business) | $8.15/user/mo (Standard) | $8.50/member/mo (Business) |
-| **Key features** | Cycles, triage, git sync, roadmaps | Epics, sprints, 3 000+ integrations, Confluence | Tasks, chat, docs in one surface; AI summaries |
-| **Integrations** | GitHub, GitLab, Figma, Slack | 3 000+ via Marketplace | GitHub, Slack, Figma, Zapier |
-| **Audience** | Eng-focused startups and scale-ups | Enterprises, large cross-functional teams | Remote async teams, early-stage startups |
-| **Strengths** | Speed, UX, keyboard-first | Breadth, compliance, reporting | Unified surface, AI-native |
-| **Gaps** | Light on non-eng PM features | Steep learning curve, slower UX | Smaller integration ecosystem |
+|-------|--------|------|--------|
+| Positioning | \<from official home/pricing\> | … | … |
+| Price | \<1b or later step, or blank\> | … | … |
+| Key features | … | … | … |
+| Integrations | … | … | … |
+| Audience | … | … | … |
+| Strengths | … | … | … |
+| Gaps | … | … | … |
 
-**Synthesis (from filled cells only):**
-- **Linear** wins on UX and velocity for pure engineering work.
-- **Jira** wins on compliance, reporting depth, and org-wide adoption in enterprises.
-- **Height** wins for teams that want chat + tasks + docs in one place with AI summaries.
-- For a 20-person eng team without enterprise compliance needs, **Linear** or **Height** present the lowest friction.
+Synthesis only from filled cells. No invented prices.
 
 ---
 
-> **Verification checklist (internal)**  
-> - [x] Class: deep B2B → semantic slot ran first.  
-> - [x] Aggregators / "best of" listicles dropped.  
-> - [x] Dedup before read.  
-> - [x] Each official site read through layer 2; prices via step 1b.  
-> - [x] Gaps listed as explicit blanks (none needed here — all cells filled from actual reads).  
-> - [x] Synthesis only from filled cells.
+> **Verification**
+> - [x] B2B class → semantic MCP or `web_search`, not a fictional `exa_search`.
+> - [x] Aggregators dropped; URLs deduped.
+> - [x] Prices via 1b first; JS/browser only if 1b empty.
+> - [x] Native tools only (`web_search`, `web_extract`, `terminal`, `browser_*`) plus optional slots that exist in-session.

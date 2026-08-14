@@ -29,7 +29,7 @@ Instead of blindly calling `web_search` + `web_extract` on every query, this ski
 5. **Extracts structured data** (JSON-LD / Open Graph) for product/price cards via the bundled `scripts/extract_structured.py` — no third-party dependencies, stdlib only.
 6. **Cites every claim** to a URL that was actually opened in layer 2, not a search snippet.
 
-Blocked or archived pages are delegated to the companion [`blocked-page-recovery`](https://github.com/agentskills/agentskills) skill when installed.
+Blocked or archived pages are delegated to Hermes' bundled [`blocked-page-recovery`](https://github.com/NousResearch/hermes-agent/tree/main/skills/research/blocked-page-recovery) skill when it is installed.
 
 ## Requirements
 
@@ -42,7 +42,7 @@ Blocked or archived pages are delegated to the companion [`blocked-page-recovery
 | Apify-style browser / actor tools | Optional | JS SPAs, marketplaces, YouTube, social scrapes |
 | Tavily-style extract / map / crawl MCP | Optional | Last-resort HTML extract; one-host crawls |
 | `browser_navigate`, `browser_snapshot`, `browser_vision` | Optional | Interactive tasks; fallback after cascade |
-| Python 3.8+ | Required for `extract_structured.py` | stdlib only, no pip install |
+| Python 3.9+ | Required for `extract_structured.py` | stdlib only, no pip install |
 
 ## Slot overlay
 
@@ -65,7 +65,7 @@ web-lookup-routing/              ← GitHub tap repo root
         │   ├── page-reading.md           # Concrete code examples for every cascade step
         │   └── slot-overlay.example.md   # Local vendor-name override template
         └── examples/
-            ├── fact-lookup.md            # "What is the current price of X?"
+            ├── fact-lookup.md            # Bare fact / reference read
             ├── product-card.md           # Structured product/price extraction
             └── b2b-comparison.md         # Competitor comparison table
 ```
