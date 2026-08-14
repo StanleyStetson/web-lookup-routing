@@ -5,7 +5,17 @@ A [Hermes Agent](https://hermes-agent.nousresearch.com) skill that classifies a 
 ## Install
 
 ```bash
-hermes skills install web-lookup-routing
+# Add this repo as a tap (one-time setup)
+hermes skills tap add StanleyStetson/web-lookup-routing
+
+# Install the skill
+hermes skills install StanleyStetson/web-lookup-routing/web-lookup-routing
+```
+
+Or install directly without adding the tap:
+
+```bash
+hermes skills install StanleyStetson/web-lookup-routing/skills/web-lookup-routing
 ```
 
 ## What it does
@@ -41,19 +51,23 @@ Copy `references/slot-overlay.example.md` next to your local install and fill in
 ## Files
 
 ```
-web-lookup-routing/
-├── SKILL.md                          # Main skill — routing logic and cascade
-├── scripts/
-│   └── extract_structured.py         # JSON-LD + Open Graph extractor (stdlib only)
-├── references/
-│   ├── marketplace-pricing.md        # Class-of-error: multi-tier snippet price traps
-│   ├── competitor-analysis.md        # B2B competitor table template
-│   ├── page-reading.md               # Concrete code examples for every cascade step
-│   └── slot-overlay.example.md       # Local vendor-name override template
-└── examples/
-    ├── fact-lookup.md                # "What is the current price of X?"
-    ├── product-card.md               # Structured product/price extraction
-    └── b2b-comparison.md             # Competitor comparison table
+web-lookup-routing/              ← GitHub tap repo root
+├── README.md
+├── LICENSE
+└── skills/
+    └── web-lookup-routing/      ← skill slug (install target)
+        ├── SKILL.md             # Main skill — routing logic and cascade
+        ├── scripts/
+        │   └── extract_structured.py  # JSON-LD + Open Graph extractor (stdlib only)
+        ├── references/
+        │   ├── marketplace-pricing.md    # Class-of-error: multi-tier snippet price traps
+        │   ├── competitor-analysis.md    # B2B competitor table template
+        │   ├── page-reading.md           # Concrete code examples for every cascade step
+        │   └── slot-overlay.example.md   # Local vendor-name override template
+        └── examples/
+            ├── fact-lookup.md            # "What is the current price of X?"
+            ├── product-card.md           # Structured product/price extraction
+            └── b2b-comparison.md         # Competitor comparison table
 ```
 
 ## License
