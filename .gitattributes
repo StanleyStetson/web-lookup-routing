@@ -1,0 +1,13 @@
+# Normalize line endings to LF on all platforms
+* text=auto eol=lf
+
+# Python scripts — always LF
+*.py text eol=lf
+
+# Markdown — always LF
+*.md text eol=lf
+
+# Binary files — never touch
+*.png binary
+*.jpg binary
+*.gif binary
